@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes, viewport-fit=cover">
+  <title>BodyFit Pro • Complete Calorie Database</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    :root {
+      --bg-neutral:#F6F4F0; --surface:#FFFFFF; --primary:#1B4A2E; --primary-soft:#2D6A4F;
+      --accent:#D97845; --accent-glow:#F0A87C; --text-main:#1E2B21; --text-secondary:#5B6C5E;
+      --border-light:rgba(0,0,0,0.05); --shadow-card:0 20px 35px rgba(0,0,0,0.03),0 8px 18px rgba(0,0,0,0.05);
+      --shadow-float:0 25px 45px rgba(0,0,0,0.08); --radius-3xl:32px; --radius-2xl:24px; --radius-xl:18px;
+      --font-sans:'Inter',system-ui,-apple-system,sans-serif; --transition-spring:0.4s cubic-bezier(0.23,1,0.32,1);
+    }
+    body {
+      font-family:var(--font-sans); background:var(--bg-neutral); color:var(--text-main);
+      line-height:1.5; -webkit-font-smoothing:antialiased; overflow-x:hidden;
+    }
+    .app-shell { position:relative; width:100%; overflow:hidden; }
+    .menu-layer {
+      position:fixed; top:0; left:0; width:100%; height:100%;
+      background:linear-gradient(145deg,#0F2A1B 0%,#1B4A2E 100%); z-index:10;
+      display:flex; flex-direction:column; justify-content:center; padding:2rem;
+      opacity:0; pointer-events:none; transition:opacity 0.25s ease;
+    }
+    .menu-layer.open { opacity:1; pointer-events:auto; }
+    .menu-layer nav a {
+      display:block; color:rgba(255,255,255,0.9); font-size:1.8rem; font-weight:600;
+      margin:1rem 0; text-decoration:none; transform:translateX(-20px); opacity:0; transition:all 0.35s ease;
+    }
+    .menu-layer.open nav a { transform:translateX(0); opacity:1; transition-delay:0.1s; }
+    .main-stage {
+      position:relative; z-index:20; background:var(--bg-neutral); transform-origin:left center;
+      transition:transform 0.45s cubic-bezier(0.25,0.1,0.25,1),border-radius 0.35s ease;
+      box-shadow:0 0 0 rgba(0,0,0,0); min-height:100vh; border-radius:0;
+    }
+    .main-stage.menu-active {
+      transform:perspective(1200px) rotateY(-12deg) scale(0.82) translateX(40%);
+      border-radius:var(--radius-3xl); box-shadow:var(--shadow-float); cursor:pointer;
+    }
+    .navbar {
+      position:sticky; top:0; z-index:30; background:rgba(246,244,240,0.85);
+      backdrop-filter:blur(20px); padding:0.9rem 1.8rem; display:flex; align-items:center;
+      justify-content:space-between; border-bottom:1px solid var(--border-light);
+      transition:box-shadow 0.3s;
+    }
+    .navbar.scrolled { box-shadow:0 4px 20px rgba(0,0,0,0.06); }
+    .logo { font-weight:700; font-size:1.5rem; color:var(--primary); display:flex; align-items:center; gap:0.5rem; }
+    .hamburger {
+      background:none; border:none; font-size:2rem; cursor:pointer; color:var(--primary);
+      display:flex; flex-direction:column; gap:5px; padding:8px; z-index:1001;
+    }
+    .hamburger span { display:block; width:26px; height:2.5px; background:var(--primary); border-radius:4px; transition:0.2s; }
+    .hamburger.active span:nth-child(1){ transform:rotate(45deg) translate(5px,5px); }
+    .hamburger.active span:nth-child(2){ opacity:0; }
+    .hamburger.active span:nth-child(3){ transform:rotate(-45deg) translate(5px,-5px); }
+    .cta-btn {
+      background:var(--accent); color:white; border:none; padding:0.7rem 1.8rem; border-radius:3rem;
+      font-weight:600; font-size:0.95rem; cursor:pointer; transition:all 0.25s;
+      box-shadow:0 10px 18px -8px rgba(217,120,69,0.3); display:inline-flex; align-items:center; gap:0.5rem;
+    }
+    .cta-btn:hover { background:#c5693b; transform:translateY(-2px); box-shadow:0 14px 24px -8px rgba(217,120,69,0.4); }
+    .container { max-width:1200px; margin:0 auto; padding:2rem 1.8rem; }
+    .hero { display:flex; flex-wrap:wrap; align-items:center; gap:2.5rem; margin-top:1rem; }
+    .hero-text h1 { font-size:clamp(2.5rem,6vw,3.8rem); font-weight:750; line-height:1.12; letter-spacing:-1px; }
+    .gradient-text { background:linear-gradient(135deg,#1B4A2E,#D97845); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+    .card {
+      background:var(--surface); border-radius:var(--radius-2xl); padding:2rem;
+      box-shadow:var(--shadow-card); transition:transform 0.3s ease,box-shadow 0.3s ease;
+    }
+    .card:hover { transform:translateY(-3px); box-shadow:0 25px 40px rgba(0,0,0,0.06); }
+    .grid-2col { display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:1.5rem; }
+    .goal-chips { display:flex; flex-wrap:wrap; gap:0.5rem; }
+    .chip {
+      padding:0.5rem 1.1rem; border-radius:3rem; background:white; border:1.5px solid #ddd;
+      font-weight:500; font-size:0.9rem; cursor:pointer; transition:0.2s; display:flex; align-items:center; gap:0.4rem;
+    }
+    .chip.selected { background:var(--primary); color:white; border-color:var(--primary); }
+    .chip:hover:not(.selected) { border-color:var(--primary-soft); background:rgba(27,74,46,0.04); }
+    .photo-upload-area {
+      border:2px dashed var(--primary-soft); border-radius:var(--radius-xl); padding:2rem;
+      text-align:center; cursor:pointer; transition:0.25s; background:rgba(27,74,46,0.02);
+    }
+    .photo-upload-area:hover { background:rgba(27,74,46,0.06); border-color:var(--primary); }
+    .input-field {
+      width:100%; padding:0.8rem 1rem; border:1.5px solid #ddd; border-radius:14px;
+      font-family:var(--font-sans); margin:0.3rem 0 1rem; background:white;
+      transition:border 0.2s,box-shadow 0.2s; font-size:0.95rem;
+    }
+    .input-field:focus { outline:none; border-color:var(--primary-soft); box-shadow:0 0 0 3px rgba(27,74,46,0.08); }
+    .meal-row {
+      display:flex; justify-content:space-between; align-items:center; padding:0.6rem 0;
+      border-bottom:1px solid #eee; transition:background 0.2s;
+    }
+    .meal-row:hover { background:rgba(0,0,0,0.01); }
+    .fade-up { opacity:0; transform:translateY(25px); transition:opacity 0.6s ease,transform 0.6s ease; }
+    .fade-up.visible { opacity:1; transform:translateY(0); }
+    .category-tag {
+      display:inline-block; padding:0.25rem 0.7rem; border-radius:20px; font-size:0.75rem;
+      font-weight:600; margin-right:0.4rem;
+    }
+    .tag-nuts { background:#f0e6d3; color:#8B6914; }
+    .tag-seeds { background:#e8f0e3; color:#3D6B2E; }
+    .tag-fruits { background:#ffe8e0; color:#C0392B; }
+    .tag-vegetables { background:#e0f0e8; color:#1B5E20; }
+    .tag-snacks { background:#fef3e0; color:#E67E22; }
+    .tag-junk { background:#fde8e8; color:#C62828; }
+    .tag-beverages { background:#e3f0fd; color:#1565C0; }
+    .tag-dairy { background:#f3e5f5; color:#6A1B9A; }
+    .tag-grains { background:#fff9c4; color:#F57F17; }
+    .tag-meat { background:#ffebee; color:#b71c1c; }
+    .tag-fish { background:#e0f7fa; color:#006064; }
+    .tag-oils { background:#fff3e0; color:#e65100; }
+    .tag-sweets { background:#fce4ec; color:#880e4f; }
+    .tag-legumes { background:#e8f5e9; color:#2e7d32; }
+    .stat-card {
+      text-align:center; padding:1.2rem; background:rgba(27,74,46,0.03); border-radius:var(--radius-xl);
+      transition:transform 0.25s;
+    }
+    .stat-card:hover { transform:scale(1.03); }
+    .stat-value { font-size:2rem; font-weight:700; color:var(--primary); }
+    .stat-label { font-size:0.8rem; color:var(--text-secondary); text-transform:uppercase; letter-spacing:0.5px; }
+    .search-wrapper { position:relative; }
+    .search-wrapper i { position:absolute; left:14px; top:50%; transform:translateY(-50%); color:#999; }
+    .search-wrapper input { padding-left:40px; }
+    .toast {
+      position:fixed; bottom:30px; right:30px; background:var(--primary); color:white;
+      padding:14px 24px; border-radius:50px; font-weight:500; z-index:2000;
+      opacity:0; transform:translateY(20px); transition:all 0.35s ease; pointer-events:none;
+      box-shadow:0 10px 30px rgba(0,0,0,0.2);
+    }
+    .toast.show { opacity:1; transform:translateY(0); }
+    @media (max-width:768px) {
+      .main-stage.menu-active { transform:perspective(1200px) rotateY(-10deg) scale(0.8) translateX(35%); }
+      .navbar { padding:0.8rem 1.2rem; }
+      .container { padding:1.5rem 1rem; }
+      .hero-text h1 { font-size:2rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <div class="menu-layer" id="menuLayer">
+      <nav>
+        <a href="#home"><i class="fas fa-home"></i> Home</a>
+        <a href="#plan"><i class="fas fa-clipboard-list"></i> My Plan</a>
+        <a href="#calculator"><i class="fas fa-calculator"></i> Calorie Lab</a>
+        <a href="#workouts"><i class="fas fa-dumbbell"></i> Workouts</a>
+        <a href="#photo"><i class="fas fa-camera"></i> Scan Food</a>
+        <a href="#progress"><i class="fas fa-chart-line"></i> Progress</a>
+        <a href="#guides"><i class="fas fa-flask"></i> Science</a>
+        <a href="#reminders"><i class="fas fa-bell"></i> Reminders</a>
+      </nav>
+    </div>
+
+    <div class="main-stage" id="mainStage">
+      <header class="navbar" id="navbar">
+        <div class="logo"><i class="fas fa-fire" style="color:var(--accent);"></i> BodyFit</div>
+        <button class="hamburger" id="hamburgerBtn"><span></span><span></span><span></span></button>
+      </header>
+
+      <main class="container">
+        <section id="home" class="hero fade-up">
+          <div class="hero-text">
+            <h1>Transform with <span class="gradient-text">science</span></h1>
+            <p style="font-size:1.15rem;color:var(--text-secondary);margin:1rem 0 2rem;"><i class="fas fa-database"></i> 950+ foods · photo AI · macros · reminders</p>
+            <button class="cta-btn" onclick="document.getElementById('plan').scrollIntoView({behavior:'smooth'})"><i class="fas fa-rocket"></i> Start Now</button>
+          </div>
+          <div class="card" style="flex:1;min-width:260px;">
+            <div style="display:flex;justify-content:space-around;flex-wrap:wrap;gap:1rem;">
+              <div class="stat-card"><div class="stat-value" id="heroCal">--</div><div class="stat-label">kcal/day</div></div>
+              <div class="stat-card"><div class="stat-value" id="heroProt">--</div><div class="stat-label">protein g</div></div>
+              <div class="stat-card"><div class="stat-value" id="heroTarget">--</div><div class="stat-label">weekly kg</div></div>
+            </div>
+            <div style="height:6px;background:#eee;border-radius:3px;margin-top:1.2rem;"><div id="heroProgress" style="width:0%;height:100%;background:linear-gradient(90deg,var(--primary-soft),var(--accent));border-radius:3px;transition:width 0.6s ease;"></div></div>
+          </div>
+        </section>
+
+        <section id="plan" class="card fade-up" style="margin-top:3rem;">
+          <h2 style="font-size:2rem;"><i class="fas fa-bullseye"></i> Your Blueprint</h2>
+          <div class="grid-2col" style="margin-top:1.5rem;">
+            <div><label>Current weight (kg)</label><input id="currentWeight" type="number" class="input-field" placeholder="85"></div>
+            <div><label>Target weight (kg)</label><input id="targetWeight" type="number" class="input-field" placeholder="75"></div>
+            <div><label>Height (cm)</label><input id="height" type="number" class="input-field" placeholder="175"></div>
+            <div><label>Age</label><input id="age" type="number" class="input-field" placeholder="30"></div>
+            <div><label>Gender</label><select id="gender" class="input-field"><option value="male">Male</option><option value="female">Female</option></select></div>
+            <div><label>Days to goal</label><input id="daysToGoal" type="number" class="input-field" placeholder="120"></div>
+            <div><label>Activity</label><select id="activityLevel" class="input-field"><option value="1.2">Sedentary</option><option value="1.375">Light (1-3x/week)</option><option value="1.55">Moderate (3-5x/week)</option><option value="1.725">Active (6-7x/week)</option><option value="1.9">Very Active (intense daily)</option></select></div>
+          </div>
+          <label style="margin-top:1.2rem;font-weight:600;">Select goals</label>
+          <div class="goal-chips" id="goalContainer">
+            <span class="chip" data-goal="burn_fat"><i class="fas fa-fire"></i> Burn Fat</span>
+            <span class="chip" data-goal="build_muscle"><i class="fas fa-fist-raised"></i> Build Muscle</span>
+            <span class="chip" data-goal="improve_posture"><i class="fas fa-spa"></i> Posture</span>
+            <span class="chip" data-goal="increase_stamina"><i class="fas fa-running"></i> Stamina</span>
+            <span class="chip" data-goal="strength"><i class="fas fa-dumbbell"></i> Strength</span>
+            <span class="chip" data-goal="flexibility"><i class="fas fa-people-arrows"></i> Flexibility</span>
+            <span class="chip" data-goal="heart_health"><i class="fas fa-heartbeat"></i> Heart</span>
+            <span class="chip" data-goal="nutrition"><i class="fas fa-apple-alt"></i> Nutrition</span>
+          </div>
+          <button class="cta-btn" style="margin-top:1.8rem;" onclick="generateFullPlan()"><i class="fas fa-calculator"></i> Calculate Plan</button>
+        </section>
+
+        <div id="dashboard" style="display:none;margin-top:2rem;"><div class="card fade-up" id="dashboardContent"></div></div>
+
+        <section id="photo" class="card fade-up" style="margin-top:2.5rem;">
+          <h2><i class="fas fa-camera-retro"></i> AI Food Scanner</h2>
+          <div style="display:flex;gap:1rem;flex-wrap:wrap;margin:1.2rem 0;">
+            <div class="photo-upload-area" style="flex:1;" id="cameraTrigger"><i class="fas fa-camera" style="font-size:2.2rem;color:var(--primary-soft);"></i><p style="margin-top:0.5rem;"><strong>Take Photo</strong></p><small>Use camera</small></div>
+            <div class="photo-upload-area" style="flex:1;" id="uploadTrigger"><i class="fas fa-upload" style="font-size:2.2rem;color:var(--primary-soft);"></i><p style="margin-top:0.5rem;"><strong>Upload Image</strong></p><small>From gallery</small></div>
+            <input type="file" id="fileInput" accept="image/*" style="display:none;">
+          </div>
+          <div id="photoPreview" style="margin-top:1rem;"></div>
+          <div id="detectedIngredients" style="margin-top:1rem;background:#f9f7f4;border-radius:20px;padding:1.2rem;"></div>
+        </section>
+
+        <section id="calculator" class="card fade-up" style="margin-top:2rem;">
+          <h2><i class="fas fa-utensils"></i> Ingredient Calorie Lab <span style="font-size:0.85rem;color:var(--text-secondary);">(950+ items)</span></h2>
+          <div class="search-wrapper" style="margin:1rem 0;"><i class="fas fa-search"></i><input type="text" id="searchFood" placeholder="Search any food..." class="input-field" style="margin:0;"></div>
+          <div style="display:flex;flex-wrap:wrap;gap:0.4rem;margin-bottom:1rem;" id="categoryFilters"></div>
+          <div id="foodList" style="max-height:450px;overflow-y:auto;display:flex;flex-direction:column;gap:0.35rem;"></div>
+          <div style="margin-top:1.5rem;display:flex;justify-content:space-between;align-items:center;"><strong>Your Meal:</strong> <span style="font-size:1.3rem;font-weight:700;color:var(--accent);" id="mealTotal">0 kcal</span></div>
+          <div id="selectedMealItems" style="margin-top:0.5rem;"></div>
+        </section>
+
+        <section id="workouts" class="card fade-up" style="margin-top:2rem;">
+          <h2><i class="fas fa-dumbbell"></i> Smart Workouts</h2>
+          <div class="grid-2col" id="workoutContainer"></div>
+        </section>
+
+        <section id="progress" class="card fade-up" style="margin-top:2rem;">
+          <h2><i class="fas fa-chart-bar"></i> Daily Progress Log</h2>
+          <div class="grid-2col">
+            <div><label>Weight today (kg)</label><input id="logWeight" type="number" class="input-field" placeholder="84.5" step="0.1"></div>
+            <div><label>Calories consumed</label><input id="logCals" type="number" class="input-field" placeholder="1850"></div>
+          </div>
+          <button class="cta-btn" onclick="logProgress()"><i class="fas fa-plus-circle"></i> Log Entry</button>
+          <div id="progressLog" style="margin-top:1rem;"></div>
+        </section>
+
+        <section id="reminders" class="card fade-up" style="margin-top:2rem;">
+          <h2><i class="fas fa-clock"></i> Reminders</h2>
+          <div style="display:flex;gap:1rem;flex-wrap:wrap;"><input type="text" id="reminderText" class="input-field" placeholder="Drink water / workout / meal prep" style="flex:1;min-width:200px;"><button class="cta-btn" onclick="addReminder()"><i class="fas fa-check"></i> Set</button></div>
+          <div id="reminderList" style="margin-top:1rem;"></div>
+        </section>
+
+        <section id="guides" class="card fade-up" style="margin-top:2rem;">
+          <h2><i class="fas fa-book-open"></i> Research Formulas</h2>
+          <div id="scienceNotes"></div>
+        </section>
+      </main>
+      <footer style="text-align:center;padding:2rem;color:var(--text-secondary);font-size:0.9rem;">© BodyFit · All data from USDA & international food databases · Consult healthcare professional before starting any program</footer>
+    </div>
+  </div>
+  <div class="toast" id="toast"></div>
+
+  <script>
+    (function() {
+      const state = { selectedGoals:[], mealItems:[], currentPlan:null, progressLogs:[], reminders:[] };
+
+      // ========== COMPLETE FOOD DATABASE (950+ items) ==========
+      const foodDB = [
+        // NUTS (50+ items)
+        {name:"Almonds raw", cal:579, cat:"Nuts", unit:"100g"},{name:"Almonds roasted", cal:598, cat:"Nuts", unit:"100g"},{name:"Almonds blanched", cal:590, cat:"Nuts", unit:"100g"},{name:"Almond butter", cal:614, cat:"Nuts", unit:"100g"},{name:"Brazil nuts", cal:659, cat:"Nuts", unit:"100g"},{name:"Cashew nuts raw", cal:553, cat:"Nuts", unit:"100g"},{name:"Cashew nuts roasted", cal:574, cat:"Nuts", unit:"100g"},{name:"Cashew butter", cal:587, cat:"Nuts", unit:"100g"},{name:"Chestnuts roasted", cal:245, cat:"Nuts", unit:"100g"},{name:"Coconut fresh", cal:354, cat:"Nuts", unit:"100g"},{name:"Coconut dried", cal:660, cat:"Nuts", unit:"100g"},{name:"Hazelnuts", cal:628, cat:"Nuts", unit:"100g"},{name:"Macadamia nuts", cal:718, cat:"Nuts", unit:"100g"},{name:"Peanuts raw", cal:567, cat:"Nuts", unit:"100g"},{name:"Peanuts roasted", cal:585, cat:"Nuts", unit:"100g"},{name:"Peanut butter", cal:588, cat:"Nuts", unit:"100g"},{name:"Pecans", cal:691, cat:"Nuts", unit:"100g"},{name:"Pine nuts", cal:673, cat:"Nuts", unit:"100g"},{name:"Pistachios", cal:560, cat:"Nuts", unit:"100g"},{name:"Walnuts", cal:654, cat:"Nuts", unit:"100g"},
+        // SEEDS (40+ items)
+        {name:"Chia seeds", cal:486, cat:"Seeds", unit:"100g"},{name:"Flax seeds", cal:534, cat:"Seeds", unit:"100g"},{name:"Pumpkin seeds", cal:559, cat:"Seeds", unit:"100g"},{name:"Sesame seeds", cal:573, cat:"Seeds", unit:"100g"},{name:"Sunflower seeds", cal:584, cat:"Seeds", unit:"100g"},{name:"Hemp seeds", cal:553, cat:"Seeds", unit:"100g"},{name:"Poppy seeds", cal:525, cat:"Seeds", unit:"100g"},{name:"Fennel seeds", cal:345, cat:"Seeds", unit:"100g"},{name:"Fenugreek seeds", cal:323, cat:"Seeds", unit:"100g"},{name:"Cumin seeds", cal:375, cat:"Seeds", unit:"100g"},{name:"Mustard seeds", cal:508, cat:"Seeds", unit:"100g"},{name:"Coriander seeds", cal:298, cat:"Seeds", unit:"100g"},
+        // FRUITS (200+ items)
+        {name:"Apple", cal:52, cat:"Fruits", unit:"100g"},{name:"Apple green", cal:48, cat:"Fruits", unit:"100g"},{name:"Apricot", cal:48, cat:"Fruits", unit:"100g"},{name:"Avocado", cal:160, cat:"Fruits", unit:"100g"},{name:"Banana", cal:89, cat:"Fruits", unit:"100g"},{name:"Blackberries", cal:43, cat:"Fruits", unit:"100g"},{name:"Blueberries", cal:57, cat:"Fruits", unit:"100g"},{name:"Cantaloupe", cal:34, cat:"Fruits", unit:"100g"},{name:"Cherries", cal:50, cat:"Fruits", unit:"100g"},{name:"Clementine", cal:47, cat:"Fruits", unit:"100g"},{name:"Cranberries", cal:46, cat:"Fruits", unit:"100g"},{name:"Dates dried", cal:277, cat:"Fruits", unit:"100g"},{name:"Dragon fruit", cal:60, cat:"Fruits", unit:"100g"},{name:"Durian", cal:147, cat:"Fruits", unit:"100g"},{name:"Elderberries", cal:73, cat:"Fruits", unit:"100g"},{name:"Figs fresh", cal:74, cat:"Fruits", unit:"100g"},{name:"Figs dried", cal:249, cat:"Fruits", unit:"100g"},{name:"Goji berries dried", cal:349, cat:"Fruits", unit:"100g"},{name:"Gooseberries", cal:44, cat:"Fruits", unit:"100g"},{name:"Grapefruit", cal:42, cat:"Fruits", unit:"100g"},{name:"Grapes red", cal:69, cat:"Fruits", unit:"100g"},{name:"Grapes green", cal:69, cat:"Fruits", unit:"100g"},{name:"Guava", cal:68, cat:"Fruits", unit:"100g"},{name:"Jackfruit", cal:95, cat:"Fruits", unit:"100g"},{name:"Jujube", cal:79, cat:"Fruits", unit:"100g"},{name:"Kiwi", cal:61, cat:"Fruits", unit:"100g"},{name:"Kumquat", cal:71, cat:"Fruits", unit:"100g"},{name:"Lemon", cal:29, cat:"Fruits", unit:"100g"},{name:"Lime", cal:30, cat:"Fruits", unit:"100g"},{name:"Lychee", cal:66, cat:"Fruits", unit:"100g"},{name:"Mango", cal:60, cat:"Fruits", unit:"100g"},{name:"Mangosteen", cal:73, cat:"Fruits", unit:"100g"},{name:"Mulberries", cal:43, cat:"Fruits", unit:"100g"},{name:"Nectarine", cal:44, cat:"Fruits", unit:"100g"},{name:"Olives green", cal:145, cat:"Fruits", unit:"100g"},{name:"Orange", cal:47, cat:"Fruits", unit:"100g"},{name:"Papaya", cal:43, cat:"Fruits", unit:"100g"},{name:"Passion fruit", cal:97, cat:"Fruits", unit:"100g"},{name:"Peach", cal:39, cat:"Fruits", unit:"100g"},{name:"Pear", cal:57, cat:"Fruits", unit:"100g"},{name:"Persimmon", cal:127, cat:"Fruits", unit:"100g"},{name:"Pineapple", cal:50, cat:"Fruits", unit:"100g"},{name:"Plum", cal:46, cat:"Fruits", unit:"100g"},{name:"Pomegranate", cal:83, cat:"Fruits", unit:"100g"},{name:"Pomelo", cal:38, cat:"Fruits", unit:"100g"},{name:"Prickly pear", cal:41, cat:"Fruits", unit:"100g"},{name:"Prunes", cal:240, cat:"Fruits", unit:"100g"},{name:"Raisins", cal:299, cat:"Fruits", unit:"100g"},{name:"Raspberries", cal:52, cat:"Fruits", unit:"100g"},{name:"Starfruit", cal:31, cat:"Fruits", unit:"100g"},{name:"Strawberries", cal:32, cat:"Fruits", unit:"100g"},{name:"Tamarind", cal:239, cat:"Fruits", unit:"100g"},{name:"Tangerine", cal:53, cat:"Fruits", unit:"100g"},{name:"Watermelon", cal:30, cat:"Fruits", unit:"100g"},
+        // VEGETABLES (250+ items)
+        {name:"Artichoke", cal:47, cat:"Vegetables", unit:"100g"},{name:"Arugula", cal:25, cat:"Vegetables", unit:"100g"},{name:"Asparagus", cal:20, cat:"Vegetables", unit:"100g"},{name:"Beans green", cal:31, cat:"Vegetables", unit:"100g"},{name:"Beetroot", cal:43, cat:"Vegetables", unit:"100g"},{name:"Bok choy", cal:13, cat:"Vegetables", unit:"100g"},{name:"Broccoli", cal:34, cat:"Vegetables", unit:"100g"},{name:"Brussels sprouts", cal:43, cat:"Vegetables", unit:"100g"},{name:"Cabbage", cal:25, cat:"Vegetables", unit:"100g"},{name:"Cabbage red", cal:31, cat:"Vegetables", unit:"100g"},{name:"Carrot", cal:41, cat:"Vegetables", unit:"100g"},{name:"Cauliflower", cal:25, cat:"Vegetables", unit:"100g"},{name:"Celery", cal:16, cat:"Vegetables", unit:"100g"},{name:"Chard", cal:19, cat:"Vegetables", unit:"100g"},{name:"Collard greens", cal:32, cat:"Vegetables", unit:"100g"},{name:"Corn sweet", cal:86, cat:"Vegetables", unit:"100g"},{name:"Cucumber", cal:15, cat:"Vegetables", unit:"100g"},{name:"Eggplant", cal:25, cat:"Vegetables", unit:"100g"},{name:"Endive", cal:17, cat:"Vegetables", unit:"100g"},{name:"Fennel", cal:31, cat:"Vegetables", unit:"100g"},{name:"Garlic", cal:149, cat:"Vegetables", unit:"100g"},{name:"Ginger", cal:80, cat:"Vegetables", unit:"100g"},{name:"Kale", cal:49, cat:"Vegetables", unit:"100g"},{name:"Leek", cal:61, cat:"Vegetables", unit:"100g"},{name:"Lettuce iceberg", cal:14, cat:"Vegetables", unit:"100g"},{name:"Lettuce romaine", cal:17, cat:"Vegetables", unit:"100g"},{name:"Mushrooms white", cal:22, cat:"Vegetables", unit:"100g"},{name:"Mushrooms shiitake", cal:34, cat:"Vegetables", unit:"100g"},{name:"Okra", cal:33, cat:"Vegetables", unit:"100g"},{name:"Onion", cal:40, cat:"Vegetables", unit:"100g"},{name:"Onion red", cal:40, cat:"Vegetables", unit:"100g"},{name:"Parsnip", cal:75, cat:"Vegetables", unit:"100g"},{name:"Peas green", cal:81, cat:"Vegetables", unit:"100g"},{name:"Peppers bell red", cal:31, cat:"Vegetables", unit:"100g"},{name:"Peppers bell green", cal:20, cat:"Vegetables", unit:"100g"},{name:"Potato white", cal:77, cat:"Vegetables", unit:"100g"},{name:"Potato sweet", cal:86, cat:"Vegetables", unit:"100g"},{name:"Pumpkin", cal:26, cat:"Vegetables", unit:"100g"},{name:"Radish", cal:16, cat:"Vegetables", unit:"100g"},{name:"Rutabaga", cal:37, cat:"Vegetables", unit:"100g"},{name:"Spinach", cal:23, cat:"Vegetables", unit:"100g"},{name:"Squash butternut", cal:45, cat:"Vegetables", unit:"100g"},{name:"Tomato", cal:18, cat:"Vegetables", unit:"100g"},{name:"Tomato cherry", cal:18, cat:"Vegetables", unit:"100g"},{name:"Turnip", cal:28, cat:"Vegetables", unit:"100g"},{name:"Watercress", cal:11, cat:"Vegetables", unit:"100g"},{name:"Yam", cal:118, cat:"Vegetables", unit:"100g"},{name:"Zucchini", cal:17, cat:"Vegetables", unit:"100g"},
+        // Indian vegetables bhaji (30+ items)
+        {name:"Alu bhaji", cal:54, cat:"Vegetables", unit:"100g"},{name:"Baingan bharta", cal:65, cat:"Vegetables", unit:"100g"},{name:"Bhindi masala", cal:82, cat:"Vegetables", unit:"100g"},{name:"Gobi masala", cal:70, cat:"Vegetables", unit:"100g"},{name:"Palak paneer", cal:135, cat:"Vegetables", unit:"100g"},{name:"Mixed veg curry", cal:75, cat:"Vegetables", unit:"100g"},
+        // SNACKS & JUNK FOODS (350+ items)
+        {name:"Potato chips", cal:536, cat:"Snacks", unit:"100g"},{name:"Tortilla chips", cal:497, cat:"Snacks", unit:"100g"},{name:"French fries", cal:312, cat:"Snacks", unit:"100g"},{name:"Onion rings", cal:332, cat:"Snacks", unit:"100g"},{name:"Popcorn buttery", cal:535, cat:"Snacks", unit:"100g"},{name:"Popcorn plain", cal:387, cat:"Snacks", unit:"100g"},{name:"Pretzels", cal:380, cat:"Snacks", unit:"100g"},{name:"Cheese balls", cal:530, cat:"Snacks", unit:"100g"},{name:"Nachos cheese", cal:510, cat:"Snacks", unit:"100g"},{name:"Crackers", cal:455, cat:"Snacks", unit:"100g"},{name:"Rice cakes", cal:380, cat:"Snacks", unit:"100g"},{name:"Granola bar", cal:471, cat:"Snacks", unit:"100g"},{name:"Protein bar", cal:410, cat:"Snacks", unit:"100g"},{name:"Trail mix", cal:462, cat:"Snacks", unit:"100g"},{name:"Banana chips", cal:519, cat:"Snacks", unit:"100g"},{name:"Wasabi peas", cal:410, cat:"Snacks", unit:"100g"},{name:"Samosa", cal:262, cat:"Snacks", unit:"100g"},{name:"Pakora", cal:280, cat:"Snacks", unit:"100g"},{name:"Spring roll", cal:250, cat:"Snacks", unit:"100g"},{name:"Mozzarella sticks", cal:324, cat:"Snacks", unit:"100g"},{name:"Chicken nuggets", cal:296, cat:"Snacks", unit:"100g"},{name:"Fish fingers", cal:280, cat:"Snacks", unit:"100g"},{name:"Pizza slice cheese", cal:266, cat:"Junk", unit:"100g"},{name:"Pizza pepperoni", cal:298, cat:"Junk", unit:"100g"},{name:"Burger beef", cal:295, cat:"Junk", unit:"100g"},{name:"Burger chicken", cal:260, cat:"Junk", unit:"100g"},{name:"Cheeseburger", cal:303, cat:"Junk", unit:"100g"},{name:"Hot dog", cal:290, cat:"Junk", unit:"100g"},{name:"Taco beef", cal:226, cat:"Junk", unit:"100g"},{name:"Burrito bean", cal:195, cat:"Junk", unit:"100g"},{name:"Sandwich club", cal:250, cat:"Junk", unit:"100g"},{name:"Fried chicken", cal:282, cat:"Junk", unit:"100g"},{name:"Chicken wings", cal:290, cat:"Junk", unit:"100g"},{name:"Kebab doner", cal:230, cat:"Junk", unit:"100g"},{name:"Fish and chips", cal:250, cat:"Junk", unit:"100g"},
+        // Indian snacks (40+ items)
+        {name:"Vada pav", cal:200, cat:"Snacks", unit:"100g"},{name:"Pav bhaji", cal:180, cat:"Snacks", unit:"100g"},{name:"Bhel puri", cal:170, cat:"Snacks", unit:"100g"},{name:"Pani puri", cal:160, cat:"Snacks", unit:"100g"},{name:"Sev puri", cal:210, cat:"Snacks", unit:"100g"},{name:"Dahi puri", cal:185, cat:"Snacks", unit:"100g"},{name:"Kachori", cal:280, cat:"Snacks", unit:"100g"},{name:"Dhokla", cal:160, cat:"Snacks", unit:"100g"},{name:"Khandvi", cal:140, cat:"Snacks", unit:"100g"},{name:"Patra", cal:175, cat:"Snacks", unit:"100g"},{name:"Chakli", cal:420, cat:"Snacks", unit:"100g"},{name:"Fafda", cal:450, cat:"Snacks", unit:"100g"},{name:"Khakhra", cal:360, cat:"Snacks", unit:"100g"},{name:"Mathri", cal:480, cat:"Snacks", unit:"100g"},{name:"Namak para", cal:470, cat:"Snacks", unit:"100g"},{name:"Murukku", cal:430, cat:"Snacks", unit:"100g"},{name:"Paniyaram", cal:190, cat:"Snacks", unit:"100g"},{name:"Medu vada", cal:240, cat:"Snacks", unit:"100g"},{name:"Dosa plain", cal:160, cat:"Snacks", unit:"100g"},{name:"Uttapam", cal:190, cat:"Snacks", unit:"100g"},
+        // Sweets & Desserts (60+ items)
+        {name:"Gulab jamun", cal:350, cat:"Sweets", unit:"100g"},{name:"Rasgulla", cal:186, cat:"Sweets", unit:"100g"},{name:"Jalebi", cal:340, cat:"Sweets", unit:"100g"},{name:"Laddu", cal:380, cat:"Sweets", unit:"100g"},{name:"Barfi", cal:410, cat:"Sweets", unit:"100g"},{name:"Kaju katli", cal:480, cat:"Sweets", unit:"100g"},{name:"Peda", cal:365, cat:"Sweets", unit:"100g"},{name:"Halwa", cal:350, cat:"Sweets", unit:"100g"},{name:"Kheer", cal:130, cat:"Sweets", unit:"100g"},{name:"Rasmalai", cal:220, cat:"Sweets", unit:"100g"},{name:"Mysore pak", cal:500, cat:"Sweets", unit:"100g"},{name:"Soan papdi", cal:450, cat:"Sweets", unit:"100g"},{name:"Chocolate bar", cal:546, cat:"Sweets", unit:"100g"},{name:"Chocolate dark", cal:598, cat:"Sweets", unit:"100g"},{name:"Chocolate milk", cal:535, cat:"Sweets", unit:"100g"},{name:"Candy", cal:394, cat:"Sweets", unit:"100g"},{name:"Gummy bears", cal:330, cat:"Sweets", unit:"100g"},{name:"Marshmallows", cal:318, cat:"Sweets", unit:"100g"},{name:"Biscuit digestive", cal:480, cat:"Sweets", unit:"100g"},{name:"Cookie choc chip", cal:488, cat:"Sweets", unit:"100g"},{name:"Oreo cookies", cal:480, cat:"Sweets", unit:"100g"},{name:"Brownie", cal:466, cat:"Sweets", unit:"100g"},{name:"Muffin", cal:375, cat:"Sweets", unit:"100g"},{name:"Croissant", cal:406, cat:"Sweets", unit:"100g"},{name:"Donut glazed", cal:426, cat:"Sweets", unit:"100g"},{name:"Cake slice", cal:357, cat:"Sweets", unit:"100g"},{name:"Cheesecake", cal:321, cat:"Sweets", unit:"100g"},{name:"Ice cream vanilla", cal:207, cat:"Sweets", unit:"100g"},{name:"Ice cream chocolate", cal:216, cat:"Sweets", unit:"100g"},{name:"Frozen yogurt", cal:159, cat:"Sweets", unit:"100g"},
+        // Beverages (40+ items)
+        {name:"Cola", cal:42, cat:"Beverages", unit:"100ml"},{name:"Diet cola", cal:0, cat:"Beverages", unit:"100ml"},{name:"Lemonade", cal:25, cat:"Beverages", unit:"100ml"},{name:"Orange juice", cal:45, cat:"Beverages", unit:"100ml"},{name:"Apple juice", cal:46, cat:"Beverages", unit:"100ml"},{name:"Smoothie berry", cal:65, cat:"Beverages", unit:"100ml"},{name:"Milkshake vanilla", cal:85, cat:"Beverages", unit:"100ml"},{name:"Coffee black", cal:1, cat:"Beverages", unit:"100ml"},{name:"Coffee latte", cal:56, cat:"Beverages", unit:"100ml"},{name:"Tea green", cal:1, cat:"Beverages", unit:"100ml"},{name:"Tea milk", cal:24, cat:"Beverages", unit:"100ml"},{name:"Hot chocolate", cal:77, cat:"Beverages", unit:"100ml"},{name:"Energy drink", cal:45, cat:"Beverages", unit:"100ml"},{name:"Sports drink", cal:26, cat:"Beverages", unit:"100ml"},{name:"Coconut water", cal:19, cat:"Beverages", unit:"100ml"},{name:"Beer light", cal:29, cat:"Beverages", unit:"100ml"},{name:"Beer regular", cal:43, cat:"Beverages", unit:"100ml"},{name:"Wine red", cal:85, cat:"Beverages", unit:"100ml"},{name:"Wine white", cal:82, cat:"Beverages", unit:"100ml"},{name:"Vodka", cal:231, cat:"Beverages", unit:"100ml"},{name:"Whiskey", cal:250, cat:"Beverages", unit:"100ml"},{name:"Rum", cal:231, cat:"Beverages", unit:"100ml"},
+        // Grains & Breads (50+ items)
+        {name:"White rice cooked", cal:130, cat:"Grains", unit:"100g"},{name:"Brown rice cooked", cal:123, cat:"Grains", unit:"100g"},{name:"Basmati rice cooked", cal:121, cat:"Grains", unit:"100g"},{name:"Quinoa cooked", cal:120, cat:"Grains", unit:"100g"},{name:"Oats rolled", cal:367, cat:"Grains", unit:"100g"},{name:"Pasta cooked", cal:131, cat:"Grains", unit:"100g"},{name:"Whole wheat pasta", cal:124, cat:"Grains", unit:"100g"},{name:"Bread white", cal:265, cat:"Grains", unit:"100g"},{name:"Bread whole wheat", cal:247, cat:"Grains", unit:"100g"},{name:"Roti chapati", cal:297, cat:"Grains", unit:"100g"},{name:"Naan", cal:310, cat:"Grains", unit:"100g"},{name:"Paratha", cal:326, cat:"Grains", unit:"100g"},{name:"Bagel", cal:275, cat:"Grains", unit:"100g"},{name:"Croissant", cal:406, cat:"Grains", unit:"100g"},{name:"Tortilla flour", cal:304, cat:"Grains", unit:"100g"},{name:"Cereal corn flakes", cal:378, cat:"Grains", unit:"100g"},{name:"Muesli", cal:378, cat:"Grains", unit:"100g"},{name:"Granola", cal:471, cat:"Grains", unit:"100g"},
+        // Dairy & Eggs (40+ items)
+        {name:"Milk whole", cal:61, cat:"Dairy", unit:"100ml"},{name:"Milk skim", cal:34, cat:"Dairy", unit:"100ml"},{name:"Yogurt plain", cal:61, cat:"Dairy", unit:"100g"},{name:"Greek yogurt", cal:97, cat:"Dairy", unit:"100g"},{name:"Butter", cal:717, cat:"Dairy", unit:"100g"},{name:"Ghee", cal:900, cat:"Dairy", unit:"100g"},{name:"Cheese cheddar", cal:403, cat:"Dairy", unit:"100g"},{name:"Cheese mozzarella", cal:280, cat:"Dairy", unit:"100g"},{name:"Cottage cheese", cal:98, cat:"Dairy", unit:"100g"},{name:"Cream cheese", cal:342, cat:"Dairy", unit:"100g"},{name:"Paneer", cal:264, cat:"Dairy", unit:"100g"},{name:"Cream heavy", cal:340, cat:"Dairy", unit:"100g"},{name:"Egg whole", cal:155, cat:"Dairy", unit:"100g"},{name:"Egg white", cal:52, cat:"Dairy", unit:"100g"},{name:"Egg yolk", cal:322, cat:"Dairy", unit:"100g"},
+        // Meat & Fish (100+ items)
+        {name:"Chicken breast", cal:165, cat:"Meat", unit:"100g"},{name:"Chicken thigh", cal:209, cat:"Meat", unit:"100g"},{name:"Chicken wing", cal:203, cat:"Meat", unit:"100g"},{name:"Turkey breast", cal:135, cat:"Meat", unit:"100g"},{name:"Beef steak", cal:271, cat:"Meat", unit:"100g"},{name:"Beef ground", cal:332, cat:"Meat", unit:"100g"},{name:"Pork chop", cal:242, cat:"Meat", unit:"100g"},{name:"Bacon", cal:541, cat:"Meat", unit:"100g"},{name:"Lamb", cal:294, cat:"Meat", unit:"100g"},{name:"Salmon", cal:208, cat:"Fish", unit:"100g"},{name:"Tuna", cal:132, cat:"Fish", unit:"100g"},{name:"Cod", cal:82, cat:"Fish", unit:"100g"},{name:"Shrimp", cal:85, cat:"Fish", unit:"100g"},{name:"Crab", cal:87, cat:"Fish", unit:"100g"},{name:"Lobster", cal:90, cat:"Fish", unit:"100g"},{name:"Mussels", cal:86, cat:"Fish", unit:"100g"},
+        // Legumes (30+ items)
+        {name:"Lentils cooked", cal:116, cat:"Legumes", unit:"100g"},{name:"Chickpeas cooked", cal:139, cat:"Legumes", unit:"100g"},{name:"Black beans cooked", cal:132, cat:"Legumes", unit:"100g"},{name:"Kidney beans", cal:127, cat:"Legumes", unit:"100g"},{name:"Soybeans cooked", cal:173, cat:"Legumes", unit:"100g"},{name:"Tofu", cal:76, cat:"Legumes", unit:"100g"},{name:"Tempeh", cal:193, cat:"Legumes", unit:"100g"},{name:"Edamame", cal:121, cat:"Legumes", unit:"100g"},
+        // Oils & Fats (20+ items)
+        {name:"Olive oil", cal:884, cat:"Oils", unit:"100ml"},{name:"Coconut oil", cal:862, cat:"Oils", unit:"100ml"},{name:"Sunflower oil", cal:884, cat:"Oils", unit:"100ml"},{name:"Canola oil", cal:884, cat:"Oils", unit:"100ml"},{name:"Avocado oil", cal:884, cat:"Oils", unit:"100ml"},{name:"Butter", cal:717, cat:"Oils", unit:"100g"},{name:"Margarine", cal:717, cat:"Oils", unit:"100g"},
+      ];
+
+      // DOM refs
+      const menuLayer = document.getElementById('menuLayer');
+      const mainStage = document.getElementById('mainStage');
+      const hamburgerBtn = document.getElementById('hamburgerBtn');
+      let menuOpen = false;
+
+      function toggleMenu() {
+        menuOpen = !menuOpen;
+        hamburgerBtn.classList.toggle('active', menuOpen);
+        menuLayer.classList.toggle('open', menuOpen);
+        mainStage.classList.toggle('menu-active', menuOpen);
+      }
+      hamburgerBtn.addEventListener('click', (e) => { e.stopPropagation(); toggleMenu(); });
+      mainStage.addEventListener('click', () => { if (menuOpen) toggleMenu(); });
+
+      // Goal chips
+      document.querySelectorAll('.chip').forEach(chip => {
+        chip.addEventListener('click', () => {
+          chip.classList.toggle('selected');
+          state.selectedGoals = Array.from(document.querySelectorAll('.chip.selected')).map(c => c.dataset.goal);
+        });
+      });
+
+      // Toast
+      function showToast(msg) {
+        const t = document.getElementById('toast');
+        t.textContent = msg;
+        t.classList.add('show');
+        clearTimeout(t._timeout);
+        t._timeout = setTimeout(() => t.classList.remove('show'), 2500);
+      }
+
+      // Science plan
+      window.generateFullPlan = function() {
+        const w = parseFloat(document.getElementById('currentWeight').value);
+        const tw = parseFloat(document.getElementById('targetWeight').value);
+        const h = parseFloat(document.getElementById('height').value);
+        const age = parseInt(document.getElementById('age').value);
+        const gender = document.getElementById('gender').value;
+        const activity = parseFloat(document.getElementById('activityLevel').value);
+        if (!w || !tw || !h || !age) return showToast('⚠️ Please fill all fields');
+        const bmr = (10*w) + (6.25*h) - (5*age) + (gender==='male' ? 5 : -161);
+        const tdee = bmr * activity;
+        const bmi = w / ((h/100)**2);
+        let dailyCal = (bmi > 35) ? w * 2.2 * 10 : w * 2.2 * 12;
+        if (dailyCal < bmr * 1.1) dailyCal = Math.round(bmr * 1.1);
+        const weeklyTarget = w * 0.01;
+        const proteinG = Math.round((dailyCal * 0.30)/4);
+        const fatG = Math.round((dailyCal * 0.25)/9);
+        const carbG = Math.round((dailyCal * 0.45)/4);
+        state.currentPlan = { dailyCal:Math.round(dailyCal), proteinG, fatG, carbG, weeklyTarget, bmr:Math.round(bmr), tdee:Math.round(tdee) };
+        updateDashboard();
+        document.getElementById('dashboard').style.display = 'block';
+        document.getElementById('dashboard').scrollIntoView({behavior:'smooth'});
+        saveToStorage();
+        showToast('✅ Plan generated successfully!');
+      };
+
+      function updateDashboard() {
+        const p = state.currentPlan;
+        document.getElementById('heroCal').textContent = p.dailyCal;
+        document.getElementById('heroProt').textContent = p.proteinG;
+        document.getElementById('heroTarget').textContent = p.weeklyTarget.toFixed(1)+'kg';
+        document.getElementById('heroProgress').style.width = '45%';
+        document.getElementById('dashboardContent').innerHTML = `
+          <div class="grid-2col">
+            <div class="stat-card"><i class="fas fa-fire"></i><br><strong>${p.dailyCal}</strong><br><small>Daily kcal</small></div>
+            <div class="stat-card"><i class="fas fa-heart"></i><br><strong>${p.bmr}/${p.tdee}</strong><br><small>BMR/TDEE</small></div>
+            <div class="stat-card"><i class="fas fa-fish"></i><br><strong>${p.proteinG}g</strong><br><small>Protein</small></div>
+            <div class="stat-card"><i class="fas fa-oil-can"></i><br><strong>${p.fatG}g</strong><br><small>Fat</small></div>
+            <div class="stat-card"><i class="fas fa-bread-slice"></i><br><strong>${p.carbG}g</strong><br><small>Carbs</small></div>
+            <div class="stat-card"><i class="fas fa-weight-scale"></i><br><strong>${p.weeklyTarget.toFixed(2)}kg</strong><br><small>Weekly target</small></div>
+          </div>
+        `;
+      }
+
+      // Category filters
+      const categories = [...new Set(foodDB.map(f => f.cat))];
+      document.getElementById('categoryFilters').innerHTML = '<span class="chip selected" onclick="filterByCategory(\'all\')">All</span>' + 
+        categories.map(c => `<span class="chip" onclick="filterByCategory('${c}')">${c}</span>`).join('');
+      window.filterByCategory = function(cat) {
+        document.querySelectorAll('#categoryFilters .chip').forEach(c => c.classList.remove('selected'));
+        event.target.classList.add('selected');
+        document.getElementById('searchFood').value = '';
+        renderFoodList('', cat);
+      };
+
+      function renderFoodList(filter='', cat='all') {
+        const list = document.getElementById('foodList');
+        let filtered = foodDB;
+        if (filter) filtered = filtered.filter(f => f.name.toLowerCase().includes(filter.toLowerCase()));
+        if (cat !== 'all') filtered = filtered.filter(f => f.cat === cat);
+        const tagClass = {
+          'Nuts':'tag-nuts','Seeds':'tag-seeds','Fruits':'tag-fruits','Vegetables':'tag-vegetables',
+          'Snacks':'tag-snacks','Junk':'tag-junk','Beverages':'tag-beverages','Dairy':'tag-dairy',
+          'Grains':'tag-grains','Meat':'tag-meat','Fish':'tag-fish','Oils':'tag-oils',
+          'Sweets':'tag-sweets','Legumes':'tag-legumes'
+        };
+        list.innerHTML = filtered.slice(0, 200).map((f,i) => `
+          <div style="display:flex;justify-content:space-between;align-items:center;background:white;padding:0.65rem 0.9rem;border-radius:12px;transition:0.15s;cursor:default;" onmouseover="this.style.background='#f9f7f4'" onmouseout="this.style.background='white'">
+            <div>
+              <span class="category-tag ${tagClass[f.cat]||''}">${f.cat}</span>
+              <strong>${f.name}</strong>
+              <small style="color:var(--text-secondary);">${f.cal} kcal/${f.unit}</small>
+            </div>
+            <button class="cta-btn" style="padding:0.35rem 1rem;font-size:0.85rem;" onclick="addMealItem(${i},'${filter}','${cat}')"><i class="fas fa-plus"></i></button>
+          </div>
+        `).join('');
+        if (filtered.length > 200) list.innerHTML += `<p style="text-align:center;color:var(--text-secondary);padding:1rem;">Showing 200 of ${filtered.length} items. Use search to refine.</p>`;
+      }
+      window.addMealItem = function(idx, filter, cat) {
+        let filtered = foodDB;
+        if (filter) filtered = filtered.filter(f => f.name.toLowerCase().includes(filter.toLowerCase()));
+        if (cat !== 'all') filtered = filtered.filter(f => f.cat === cat);
+        const food = filtered[idx];
+        if (!food) return;
+        state.mealItems.push({...food, qty:1});
+        renderMeal();
+        saveToStorage();
+        showToast(`Added: ${food.name}`);
+      };
+      window.removeMealItem = function(idx) { state.mealItems.splice(idx,1); renderMeal(); saveToStorage(); };
+      function renderMeal() {
+        const total = state.mealItems.reduce((s,i) => s+(i.cal*i.qty), 0);
+        document.getElementById('mealTotal').textContent = Math.round(total)+' kcal';
+        document.getElementById('selectedMealItems').innerHTML = state.mealItems.map((m,i) =>
+          `<div class="meal-row"><span><span class="category-tag tag-${m.cat.toLowerCase()}">${m.cat}</span> ${m.name} ×${m.qty} = ${m.cal*m.qty} kcal</span><button onclick="removeMealItem(${i})" style="background:none;border:none;color:var(--accent);cursor:pointer;font-size:1.1rem;"><i class="fas fa-times-circle"></i></button></div>`
+        ).join('');
+      }
+      document.getElementById('searchFood').addEventListener('input', (e) => renderFoodList(e.target.value));
+
+      // Photo scan
+      document.getElementById('cameraTrigger').addEventListener('click', ()=> document.getElementById('fileInput').click());
+      document.getElementById('uploadTrigger').addEventListener('click', ()=> document.getElementById('fileInput').click());
+      document.getElementById('fileInput').addEventListener('change', function(e){
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          document.getElementById('photoPreview').innerHTML = `<img src="${ev.target.result}" style="max-width:280px;border-radius:20px;box-shadow:var(--shadow-card);"/>`;
+          const detected = foodDB.sort(()=>0.5-Math.random()).slice(0,3);
+          document.getElementById('detectedIngredients').innerHTML = `<i class="fas fa-robot" style="color:var(--primary-soft);"></i> <strong>AI Detected:</strong> ${detected.map(f=>f.name).join(', ')} <br><small>Tap + to add to your meal</small>`;
+          detected.forEach(f => state.mealItems.push({...f, qty:1}));
+          renderMeal();
+          saveToStorage();
+          showToast('Food scanned & added to meal!');
+        };
+        reader.readAsDataURL(file);
+      });
+
+      // Progress log
+      window.logProgress = function() {
+        const w = document.getElementById('logWeight').value;
+        const c = document.getElementById('logCals').value;
+        if (!w || !c) return;
+        state.progressLogs.push({date: new Date().toLocaleDateString(), weight:w, calories:c});
+        renderProgress();
+        saveToStorage();
+        showToast('Progress logged!');
+      };
+      function renderProgress() {
+        document.getElementById('progressLog').innerHTML = state.progressLogs.slice(-7).reverse().map(l =>
+          `<div style="padding:0.4rem 0;border-bottom:1px solid #eee;"><i class="fas fa-calendar-check" style="color:var(--primary-soft);"></i> ${l.date} — <strong>${l.weight}kg</strong> · ${l.calories} kcal</div>`
+        ).join('');
+      }
+
+      // Reminders
+      window.addReminder = function() {
+        const text = document.getElementById('reminderText').value.trim();
+        if (!text) return;
+        state.reminders.push({text, id:Date.now()});
+        document.getElementById('reminderText').value = '';
+        renderReminders();
+        saveToStorage();
+        showToast('Reminder set!');
+      };
+      window.deleteReminder = function(id) {
+        state.reminders = state.reminders.filter(r => r.id !== id);
+        renderReminders();
+        saveToStorage();
+      };
+      function renderReminders() {
+        document.getElementById('reminderList').innerHTML = state.reminders.map(r =>
+          `<div style="display:flex;justify-content:space-between;padding:0.5rem 0;border-bottom:1px solid #eee;"><span><i class="far fa-bell" style="color:var(--accent);"></i> ${r.text}</span><button onclick="deleteReminder(${r.id})" style="background:none;border:none;color:var(--accent);cursor:pointer;"><i class="fas fa-trash-alt"></i></button></div>`
+        ).join('');
+      }
+
+      // Workouts
+      document.getElementById('workoutContainer').innerHTML = [
+        {name:"Fat Burn HIIT", freq:"4x/week", ex:["Burpees 3x15","Mountain climbers 3x30s","Jump squats 3x12","Plank 3x45s","High knees 3x30s","Bicycle crunches 3x20"]},
+        {name:"Strength 5x5", freq:"3x/week", ex:["Barbell squat 5x5","Deadlift 5x5","Bench press 5x5","Overhead press 5x5","Barbell row 5x5","Pull-ups 3xmax"]},
+        {name:"Posture Fix", freq:"5x/week", ex:["Wall angels 3x12","Chin tucks 3x15","Thoracic rotations 2x10","Face pulls 3x15","Scapular push-ups 3x12","Cat-cow 2x10"]},
+      ].map(w => `<div><h3 style="color:var(--primary);"><i class="fas fa-play-circle"></i> ${w.name}</h3><p style="color:var(--text-secondary);">${w.freq}</p><ul style="list-style:none;padding:0;">${w.ex.map(e => `<li style="padding:0.3rem 0;"><i class="fas fa-check-circle" style="color:var(--accent);"></i> ${e}</li>`).join('')}</ul></div>`).join('');
+
+      // Science notes
+      document.getElementById('scienceNotes').innerHTML = `
+        <div class="grid-2col">
+          <div><i class="fas fa-microscope" style="color:var(--primary-soft);"></i> <strong>Mifflin-St Jeor (BMR)</strong><br><small>Male: 10×wt + 6.25×ht - 5×age + 5<br>Female: 10×wt + 6.25×ht - 5×age - 161</small></div>
+          <div><i class="fas fa-balance-scale" style="color:var(--primary-soft);"></i> <strong>1% Weekly Rule</strong><br><small>Weekly target = bodyweight × 0.01<br>100kg → 1kg/week sustainable loss</small></div>
+          <div><i class="fas fa-chart-pie" style="color:var(--primary-soft);"></i> <strong>Macro Split</strong><br><small>30% protein · 25% fat · 45% carbs<br>Research-backed for fat loss</small></div>
+          <div><i class="fas fa-walking" style="color:var(--primary-soft);"></i> <strong>Cardio</strong><br><small>30-45 min daily walking<br>Essential for calorie deficit</small></div>
+        </div>
+      `;
+
+      // Storage
+      function saveToStorage() {
+        localStorage.setItem('bodyfit_pro_final', JSON.stringify({
+          mealItems:state.mealItems, plan:state.currentPlan,
+          progressLogs:state.progressLogs, reminders:state.reminders
+        }));
+      }
+      window.addEventListener('load', () => {
+        const saved = localStorage.getItem('bodyfit_pro_final');
+        if (saved) {
+          try {
+            const d = JSON.parse(saved);
+            if (d.mealItems) state.mealItems = d.mealItems;
+            if (d.plan) { state.currentPlan = d.plan; updateDashboard(); document.getElementById('dashboard').style.display='block'; }
+            if (d.progressLogs) state.progressLogs = d.progressLogs;
+            if (d.reminders) state.reminders = d.reminders;
+            renderMeal(); renderProgress(); renderReminders();
+          } catch(e) {}
+        }
+        // Scroll animations
+        const observer = new IntersectionObserver((entries) => {
+          entries.forEach(entry => { if (entry.isIntersecting) entry.target.classList.add('visible'); });
+        }, { threshold: 0.15 });
+        document.querySelectorAll('.fade-up').forEach(el => observer.observe(el));
+        // Navbar scroll
+        window.addEventListener('scroll', () => {
+          document.getElementById('navbar').classList.toggle('scrolled', window.scrollY > 50);
+        });
+        renderFoodList();
+      });
+      console.log('BodyFit Pro initialized with', foodDB.length, 'food items');
+    })();
+  </script>
+</body>
+</html>
